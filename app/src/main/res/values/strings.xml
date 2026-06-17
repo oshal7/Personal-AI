@@ -1,0 +1,16 @@
+<resources>
+    <string name="app_name">Personal AI</string>
+
+    <string name="model_download_title">Set up your offline assistant</string>
+    <string name="model_download_description">Personal AI needs to download a language model once. After that, everything runs on this device — no internet required.</string>
+    <string name="model_download_button">Download model (%1$s)</string>
+    <string name="model_download_progress">Downloading… %1$d%%</string>
+    <string name="model_download_error">Download failed: %1$s</string>
+    <string name="model_download_retry">Retry</string>
+    <string name="model_loading">Loading model…</string>
+
+    <string name="chat_input_placeholder">Ask me anything…</string>
+    <string name="chat_send">Send</string>
+    <string name="chat_role_user">You</string>
+    <string name="chat_role_assistant">Assistant</string>
+</resources>

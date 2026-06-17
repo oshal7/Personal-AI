@@ -1,0 +1,4 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base window theme; Compose handles actual UI theming in ui/theme/Theme.kt -->
+    <style name="Theme.PersonalAI" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>
