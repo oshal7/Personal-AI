@@ -122,6 +122,84 @@ class ModelRepositoryTest {
     }
 
     @Test
+    fun `connection drop mid-download keeps the partial bytes for a later resume`() = runTest {
+        val bytes = Random.nextBytes(2 * 1024 * 1024)
+        val model = modelFor(bytes, sha256 = sha256(bytes))
+        server.enqueue(
+            MockResponse()
+                .setBody(okio.Buffer().write(bytes))
+                .setSocketPolicy(okhttp3.mockwebserver.SocketPolicy.DISCONNECT_DURING_RESPONSE_BODY)
+        )
+
+        val events = repository.download(model).toList()
+
+        assertTrue(events.last() is DownloadProgress.Failed)
+        val partial = File(tempFolder.root, "models/${model.fileName}.part")
+        assertTrue("partial file should be kept so a retry can resume", partial.exists())
+        assertTrue(partial.length() > 0)
+        assertTrue("should not have written the whole payload before the drop", partial.length() < bytes.size)
+    }
+
+    @Test
+    fun `retry after a dropped connection resumes via an HTTP Range request`() = runTest {
+        val bytes = Random.nextBytes(2 * 1024 * 1024)
+        val model = modelFor(bytes, sha256 = sha256(bytes))
+
+        server.enqueue(
+            MockResponse()
+                .setBody(okio.Buffer().write(bytes))
+                .setSocketPolicy(okhttp3.mockwebserver.SocketPolicy.DISCONNECT_DURING_RESPONSE_BODY)
+        )
+        repository.download(model).toList()
+        server.takeRequest()
+
+        val partial = File(tempFolder.root, "models/${model.fileName}.part")
+        val resumeFrom = partial.length()
+        assertTrue(resumeFrom > 0)
+
+        val remaining = bytes.copyOfRange(resumeFrom.toInt(), bytes.size)
+        server.enqueue(MockResponse().setResponseCode(206).setBody(okio.Buffer().write(remaining)))
+
+        val events = repository.download(model).toList()
+        val resumeRequest = server.takeRequest()
+
+        assertEquals("bytes=$resumeFrom-", resumeRequest.getHeader("Range"))
+        assertTrue(events.last() is DownloadProgress.Complete)
+        assertArrayEquals(bytes, repository.localFile(model).readBytes())
+    }
+
+    @Test
+    fun `server ignoring the range request restarts the download cleanly`() = runTest {
+        val bytes = Random.nextBytes(512 * 1024)
+        val model = modelFor(bytes, sha256 = sha256(bytes))
+        val partial = File(tempFolder.root, "models/${model.fileName}.part")
+        partial.parentFile?.mkdirs()
+        partial.writeBytes(Random.nextBytes(1024))
+
+        server.enqueue(MockResponse().setResponseCode(200).setBody(okio.Buffer().write(bytes)))
+
+        val events = repository.download(model).toList()
+
+        assertTrue(events.last() is DownloadProgress.Complete)
+        assertArrayEquals(bytes, repository.localFile(model).readBytes())
+    }
+
+    @Test
+    fun `416 from the server clears a stale partial instead of looping forever`() = runTest {
+        val model = modelFor(ByteArray(0))
+        val partial = File(tempFolder.root, "models/${model.fileName}.part")
+        partial.parentFile?.mkdirs()
+        partial.writeBytes(Random.nextBytes(1024))
+
+        server.enqueue(MockResponse().setResponseCode(416))
+
+        val events = repository.download(model).toList()
+
+        assertTrue(events.last() is DownloadProgress.Failed)
+        assertFalse(partial.exists())
+    }
+
+    @Test
     fun `delete removes a previously downloaded file`() = runTest {
         val bytes = Random.nextBytes(8 * 1024)
         val model = modelFor(bytes)
