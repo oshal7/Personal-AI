@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -37,7 +38,13 @@ class ChatViewModel(
 
     init {
         viewModelScope.launch {
-            if (llamaSession.state.value is LlamaSession.State.Initialized) {
+            // The native backend finishes initializing asynchronously, so wait for it to
+            // leave Uninitialized/Initializing instead of checking the state once at a
+            // potentially-too-early instant (which left ModelReady unreachable).
+            val readyToLoad = llamaSession.state.first {
+                it !is LlamaSession.State.Uninitialized && it !is LlamaSession.State.Initializing
+            }
+            if (readyToLoad is LlamaSession.State.Initialized) {
                 val modelFile = modelRepository.localFile(ModelRegistry.default)
                 llamaSession.loadModel(modelFile.absolutePath)
                 llamaSession.setSystemPrompt(SYSTEM_PROMPT)
