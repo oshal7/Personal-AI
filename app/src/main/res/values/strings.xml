@@ -9,6 +9,11 @@
     <string name="model_download_retry">Retry</string>
     <string name="model_loading">Loading model…</string>
 
+    <string name="model_download_notification_channel">Model download</string>
+    <string name="model_download_notification_title">Downloading offline model</string>
+    <string name="model_download_notification_starting">Starting download…</string>
+    <string name="model_download_notification_complete">Model download complete</string>
+
     <string name="chat_input_placeholder">Ask me anything…</string>
     <string name="chat_send">Send</string>
     <string name="chat_role_user">You</string>

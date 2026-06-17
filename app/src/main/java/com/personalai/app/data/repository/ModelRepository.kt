@@ -6,10 +6,16 @@ import java.io.File
 import java.io.FileOutputStream
 import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import okhttp3.Request
 
@@ -40,6 +46,32 @@ class ModelRepository(private val context: Context) {
     fun localFile(model: ModelInfo): File = File(modelsDir, model.fileName)
 
     fun isDownloaded(model: ModelInfo): Boolean = localFile(model).let { it.exists() && it.length() > 0 }
+
+    private val _downloadState = MutableStateFlow<DownloadProgress?>(null)
+
+    /**
+     * Published from whichever coroutine is actually running the download (normally the
+     * foreground service), so any observer — the service itself, or a ViewModel that gets
+     * recreated after the Activity is torn down — sees the same in-flight progress.
+     */
+    val downloadState: StateFlow<DownloadProgress?> = _downloadState.asStateFlow()
+
+    @Volatile
+    private var activeDownload: Job? = null
+
+    /**
+     * Starts a download of [model] on [scope] unless one is already running, in which case the
+     * existing job is returned instead of starting a duplicate. Safe to call repeatedly (e.g.
+     * once from the service's `onStartCommand` and once from a UI retry tap).
+     */
+    fun ensureBackgroundDownload(model: ModelInfo, scope: CoroutineScope): Job {
+        activeDownload?.let { if (it.isActive) return it }
+        val job = scope.launch {
+            download(model).collect { progress -> _downloadState.value = progress }
+        }
+        activeDownload = job
+        return job
+    }
 
     fun download(model: ModelInfo): Flow<DownloadProgress> = flow {
         val destination = localFile(model)

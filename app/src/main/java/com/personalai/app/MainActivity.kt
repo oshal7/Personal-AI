@@ -14,6 +14,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.personalai.app.domain.model.ModelRegistry
+import com.personalai.app.service.ModelDownloadService
 import com.personalai.app.ui.chat.ChatScreen
 import com.personalai.app.ui.chat.ChatViewModel
 import com.personalai.app.ui.modeldownload.ModelDownloadScreen
@@ -46,7 +47,11 @@ private fun PersonalAiNavHost(app: PersonalAiApplication) {
     NavHost(navController = navController, startDestination = startDestination) {
         composable(ROUTE_DOWNLOAD) {
             val viewModel: ModelDownloadViewModel = viewModel(
-                factory = viewModelFactory { initializer { ModelDownloadViewModel(app.modelRepository) } }
+                factory = viewModelFactory {
+                    initializer {
+                        ModelDownloadViewModel(app.modelRepository) { ModelDownloadService.start(app.applicationContext) }
+                    }
+                }
             )
             ModelDownloadScreen(viewModel) {
                 navController.navigate(ROUTE_CHAT) {

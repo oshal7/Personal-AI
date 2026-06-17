@@ -5,6 +5,12 @@
          calls out to the network for anything else. -->
     <uses-permission android:name="android.permission.INTERNET" />
 
+    <!-- Lets the model download keep running in a foreground service when the screen is
+         off or the app is backgrounded, with a persistent notification showing progress. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <application
         android:name=".PersonalAiApplication"
         android:allowBackup="true"
@@ -25,6 +31,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- stopWithTask="false" keeps the download alive if the user swipes the app
+             away from Recents while it's running. -->
+        <service
+            android:name=".service.ModelDownloadService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync"
+            android:stopWithTask="false" />
     </application>
 
 </manifest>

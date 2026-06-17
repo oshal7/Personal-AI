@@ -213,6 +213,31 @@ class ModelRepositoryTest {
     }
 
     @Test
+    fun `ensureBackgroundDownload publishes progress through downloadState`() = runTest {
+        val bytes = Random.nextBytes(64 * 1024)
+        val model = modelFor(bytes, sha256 = sha256(bytes))
+        server.enqueue(MockResponse().setBody(okio.Buffer().write(bytes)))
+
+        repository.ensureBackgroundDownload(model, this).join()
+
+        assertTrue(repository.downloadState.value is DownloadProgress.Complete)
+    }
+
+    @Test
+    fun `ensureBackgroundDownload reuses an in-flight job instead of starting a duplicate download`() = runTest {
+        val bytes = Random.nextBytes(64 * 1024)
+        val model = modelFor(bytes, sha256 = sha256(bytes))
+        server.enqueue(MockResponse().setBody(okio.Buffer().write(bytes)))
+
+        val first = repository.ensureBackgroundDownload(model, this)
+        val second = repository.ensureBackgroundDownload(model, this)
+        first.join()
+
+        assertEquals(first, second)
+        assertEquals(1, server.requestCount)
+    }
+
+    @Test
     fun `stress - large multi-megabyte payload downloads intact across many chunks`() = runTest {
         val bytes = Random.nextBytes(8 * 1024 * 1024)
         val model = modelFor(bytes, sha256 = sha256(bytes))
