@@ -18,4 +18,35 @@
     <string name="chat_send">Send</string>
     <string name="chat_role_user">You</string>
     <string name="chat_role_assistant">Assistant</string>
+    <string name="chat_typing">Thinking…</string>
+    <string name="chat_greeting">Hi there 👋</string>
+    <string name="chat_greeting_subtitle">What would you like to do today?</string>
+    <string name="chat_new_chat">New chat</string>
+    <string name="chat_open_history">History</string>
+    <string name="chat_open_tasks">Tasks</string>
+
+    <string name="category_summarize_title">Summarize</string>
+    <string name="category_summarize_subtitle">Condense long text into key points</string>
+    <string name="category_talk_title">Talk &amp; interpret</string>
+    <string name="category_talk_subtitle">Chat naturally or translate meaning</string>
+    <string name="category_plan_title">Plan &amp; remind</string>
+    <string name="category_plan_subtitle">Turn thoughts into tasks</string>
+    <string name="category_calculate_title">Calculate</string>
+    <string name="category_calculate_subtitle">Quick math &amp; conversions</string>
+
+    <string name="voice_input">Voice input</string>
+    <string name="voice_listening">Listening…</string>
+    <string name="voice_stop">Stop listening</string>
+
+    <string name="task_suggestion_title">Save this as a task?</string>
+    <string name="task_suggestion_add">Add task</string>
+    <string name="task_suggestion_dismiss">Dismiss</string>
+
+    <string name="history_title">History</string>
+    <string name="history_empty">No conversations yet</string>
+    <string name="history_delete">Delete chat</string>
+
+    <string name="tasks_title">Tasks</string>
+    <string name="tasks_empty">Suggested tasks from your chats will show up here</string>
+    <string name="tasks_delete">Delete task</string>
 </resources>
