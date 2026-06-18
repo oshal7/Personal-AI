@@ -2,7 +2,7 @@ package com.personalai.app
 
 import android.app.Application
 import com.personalai.app.data.db.AppDatabase
-import com.personalai.app.data.prefs.UserPreferences
+import com.personalai.app.data.prefs.UserPreferencesImpl
 import com.personalai.app.data.repository.ChatRepository
 import com.personalai.app.data.repository.ModelRepository
 import com.personalai.app.data.repository.TaskRepository
@@ -19,5 +19,5 @@ class PersonalAiApplication : Application() {
     val llamaSession by lazy { LlamaBridge.getSession(applicationContext) }
     val speechInputManager by lazy { SpeechInputManager(applicationContext) }
     val ttsManager by lazy { TtsManager(applicationContext) }
-    val userPreferences by lazy { UserPreferences(applicationContext) }
+    val userPreferences by lazy { UserPreferencesImpl(applicationContext) }
 }

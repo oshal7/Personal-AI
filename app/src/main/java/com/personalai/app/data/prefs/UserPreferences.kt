@@ -12,14 +12,20 @@ import kotlinx.coroutines.flow.map
 private val Context.dataStore by preferencesDataStore(name = "user_preferences")
 private val ACTIVE_MODEL_ID = stringPreferencesKey("active_model_id")
 
-/** Persists lightweight user settings — currently just which model is active — via DataStore. */
-class UserPreferences(private val context: Context) {
+/** Persists lightweight user settings — currently just which model is active. */
+interface UserPreferences {
+    val activeModel: Flow<ModelInfo>
+    suspend fun setActiveModel(model: ModelInfo)
+}
 
-    val activeModel: Flow<ModelInfo> = context.dataStore.data.map { prefs ->
+/** DataStore-backed implementation used in the running app. */
+class UserPreferencesImpl(private val context: Context) : UserPreferences {
+
+    override val activeModel: Flow<ModelInfo> = context.dataStore.data.map { prefs ->
         prefs[ACTIVE_MODEL_ID]?.let { ModelRegistry.byId(it) } ?: ModelRegistry.default
     }
 
-    suspend fun setActiveModel(model: ModelInfo) {
+    override suspend fun setActiveModel(model: ModelInfo) {
         context.dataStore.edit { prefs -> prefs[ACTIVE_MODEL_ID] = model.id }
     }
 }

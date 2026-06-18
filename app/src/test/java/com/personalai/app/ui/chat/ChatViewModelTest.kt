@@ -12,6 +12,8 @@ import com.personalai.app.data.prefs.UserPreferences
 import com.personalai.app.data.repository.ChatRepository
 import com.personalai.app.data.repository.ModelRepository
 import com.personalai.app.data.repository.TaskRepository
+import com.personalai.app.domain.model.ModelInfo
+import com.personalai.app.domain.model.ModelRegistry
 import com.personalai.app.voice.SpeechInputManager
 import com.personalai.app.voice.TtsManager
 import com.personalai.llama.LlamaSession
@@ -108,6 +110,15 @@ private class FakeTaskDao : TaskDao {
     }
 }
 
+private class FakeUserPreferences : UserPreferences {
+    private val state = MutableStateFlow(ModelRegistry.default)
+    override val activeModel: Flow<ModelInfo> = state
+
+    override suspend fun setActiveModel(model: ModelInfo) {
+        state.value = model
+    }
+}
+
 /** Stands in for the JNI-backed session so the ViewModel's state-machine handling can be tested without native code. */
 private class FakeLlamaSession : LlamaSession {
     private val _state = MutableStateFlow<LlamaSession.State>(LlamaSession.State.Uninitialized)
@@ -167,12 +178,7 @@ class ChatViewModelTest {
         every { it.state } returns MutableStateFlow<TtsManager.State>(TtsManager.State.Idle).asStateFlow()
     }
 
-    private fun fakeUserPreferences(): UserPreferences {
-        val context: Context = mockk(relaxed = true)
-        every { context.applicationContext } returns context
-        every { context.filesDir } returns java.io.File(System.getProperty("java.io.tmpdir"), "chatvm-test-prefs-${System.nanoTime()}").apply { mkdirs() }
-        return UserPreferences(context)
-    }
+    private fun fakeUserPreferences(): UserPreferences = FakeUserPreferences()
 
     private fun viewModel(
         chatRepository: ChatRepository = fakeChatRepository(),
