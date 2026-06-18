@@ -10,7 +10,12 @@ import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Surface
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -21,7 +26,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.personalai.app.domain.model.ModelRegistry
 import com.personalai.app.service.ModelDownloadService
 import com.personalai.app.ui.chat.ChatScreen
 import com.personalai.app.ui.chat.ChatViewModel
@@ -29,14 +33,18 @@ import com.personalai.app.ui.history.HistoryDrawerContent
 import com.personalai.app.ui.history.HistoryViewModel
 import com.personalai.app.ui.modeldownload.ModelDownloadScreen
 import com.personalai.app.ui.modeldownload.ModelDownloadViewModel
+import com.personalai.app.ui.settings.SettingsScreen
+import com.personalai.app.ui.settings.SettingsViewModel
 import com.personalai.app.ui.tasks.TasksScreen
 import com.personalai.app.ui.tasks.TasksViewModel
 import com.personalai.app.ui.theme.PersonalAITheme
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 private const val ROUTE_DOWNLOAD = "download"
 private const val ROUTE_CHAT_PATTERN = "chat/{sessionId}"
 private const val ROUTE_TASKS = "tasks"
+private const val ROUTE_SETTINGS = "settings"
 private const val ARG_SESSION_ID = "sessionId"
 
 private fun chatRoute(sessionId: Long) = "chat/$sessionId"
@@ -59,9 +67,16 @@ class MainActivity : ComponentActivity() {
 @Composable
 private fun PersonalAiNavHost(app: PersonalAiApplication) {
     val navController = rememberNavController()
-    val startDestination = if (app.modelRepository.isDownloaded(ModelRegistry.default)) chatRoute(0L) else ROUTE_DOWNLOAD
+    var startDestination by remember { mutableStateOf<String?>(null) }
 
-    NavHost(navController = navController, startDestination = startDestination) {
+    LaunchedEffect(Unit) {
+        val activeModel = app.userPreferences.activeModel.first()
+        startDestination = if (app.modelRepository.isDownloaded(activeModel)) chatRoute(0L) else ROUTE_DOWNLOAD
+    }
+
+    val destination = startDestination ?: return
+
+    NavHost(navController = navController, startDestination = destination) {
         composable(ROUTE_DOWNLOAD) {
             val viewModel: ModelDownloadViewModel = viewModel(
                 factory = viewModelFactory {
@@ -89,6 +104,18 @@ private fun PersonalAiNavHost(app: PersonalAiApplication) {
             )
             TasksScreen(viewModel, onBack = { navController.popBackStack() })
         }
+        composable(ROUTE_SETTINGS) {
+            val viewModel: SettingsViewModel = viewModel(
+                factory = viewModelFactory {
+                    initializer {
+                        SettingsViewModel(app.modelRepository, app.userPreferences, app.llamaSession) { model ->
+                            ModelDownloadService.start(app.applicationContext, model)
+                        }
+                    }
+                }
+            )
+            SettingsScreen(viewModel, onBack = { navController.popBackStack() })
+        }
     }
 }
 
@@ -106,6 +133,7 @@ private fun ChatSessionRoute(app: PersonalAiApplication, navController: NavHostC
                     taskRepository = app.taskRepository,
                     speechInputManager = app.speechInputManager,
                     ttsManager = app.ttsManager,
+                    userPreferences = app.userPreferences,
                     initialSessionId = sessionId,
                 )
             }
@@ -135,6 +163,10 @@ private fun ChatSessionRoute(app: PersonalAiApplication, navController: NavHostC
                         popUpTo(ROUTE_CHAT_PATTERN) { inclusive = true }
                         launchSingleTop = true
                     }
+                },
+                onOpenSettings = {
+                    scope.launch { drawerState.close() }
+                    navController.navigate(ROUTE_SETTINGS)
                 },
             )
         }

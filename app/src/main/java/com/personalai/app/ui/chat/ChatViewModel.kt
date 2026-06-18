@@ -4,10 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.personalai.app.data.db.ChatMessageEntity
 import com.personalai.app.data.db.MessageRole
+import com.personalai.app.data.prefs.UserPreferences
 import com.personalai.app.data.repository.ChatRepository
 import com.personalai.app.data.repository.ModelRepository
 import com.personalai.app.data.repository.TaskRepository
-import com.personalai.app.domain.model.ModelRegistry
+import com.personalai.app.domain.model.SYSTEM_PROMPT
 import com.personalai.app.domain.tools.TaskSuggestionDetector
 import com.personalai.app.voice.SpeechInputManager
 import com.personalai.app.voice.TtsManager
@@ -21,9 +22,6 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-private const val SYSTEM_PROMPT =
-    "You are a helpful, concise personal assistant running entirely offline on the user's phone."
-
 /** A [sessionId] of 0 means "new, unsaved chat" — no row is created until the first message is sent. */
 class ChatViewModel(
     private val chatRepository: ChatRepository,
@@ -32,6 +30,7 @@ class ChatViewModel(
     private val taskRepository: TaskRepository,
     private val speechInputManager: SpeechInputManager,
     private val ttsManager: TtsManager,
+    private val userPreferences: UserPreferences,
     initialSessionId: Long = 0L,
 ) : ViewModel() {
 
@@ -65,7 +64,8 @@ class ChatViewModel(
                 it !is LlamaSession.State.Uninitialized && it !is LlamaSession.State.Initializing
             }
             if (readyToLoad is LlamaSession.State.Initialized) {
-                val modelFile = modelRepository.localFile(ModelRegistry.default)
+                val activeModel = userPreferences.activeModel.first()
+                val modelFile = modelRepository.localFile(activeModel)
                 llamaSession.loadModel(modelFile.absolutePath)
                 llamaSession.setSystemPrompt(SYSTEM_PROMPT)
             }

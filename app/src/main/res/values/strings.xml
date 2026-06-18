@@ -57,4 +57,17 @@
     <string name="message_copied">Copied to clipboard</string>
     <string name="message_speak">Read aloud</string>
     <string name="message_stop_speaking">Stop reading aloud</string>
+
+    <string name="settings_title">Settings</string>
+    <string name="settings_open">Settings</string>
+    <string name="settings_models_title">Offline models</string>
+    <string name="settings_models_subtitle">Download a model once to use it without internet. Switch anytime — only one model runs at a time.</string>
+    <string name="settings_model_size">%1$.1f GB</string>
+    <string name="settings_model_active">Active</string>
+    <string name="settings_model_use">Use this model</string>
+    <string name="settings_model_download">Download</string>
+    <string name="settings_model_delete">Delete model</string>
+    <string name="settings_model_downloading">Downloading… %1$d%%</string>
+    <string name="settings_model_switching">Switching model…</string>
+    <string name="settings_model_error">Download failed: %1$s</string>
 </resources>

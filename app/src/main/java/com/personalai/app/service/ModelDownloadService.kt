@@ -12,6 +12,7 @@ import androidx.core.app.NotificationCompat
 import com.personalai.app.PersonalAiApplication
 import com.personalai.app.R
 import com.personalai.app.data.repository.DownloadProgress
+import com.personalai.app.domain.model.ModelInfo
 import com.personalai.app.domain.model.ModelRegistry
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -37,7 +38,7 @@ class ModelDownloadService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val modelRepository = (application as PersonalAiApplication).modelRepository
-        val model = ModelRegistry.default
+        val model = ModelRegistry.byId(intent?.getStringExtra(EXTRA_MODEL_ID) ?: ModelRegistry.default.id)
 
         startForeground(NOTIFICATION_ID, buildProgressNotification(percent = null))
 
@@ -114,9 +115,11 @@ class ModelDownloadService : Service() {
     companion object {
         private const val CHANNEL_ID = "model_download"
         private const val NOTIFICATION_ID = 1001
+        private const val EXTRA_MODEL_ID = "model_id"
 
-        fun start(context: Context) {
+        fun start(context: Context, model: ModelInfo = ModelRegistry.default) {
             val intent = Intent(context, ModelDownloadService::class.java)
+                .putExtra(EXTRA_MODEL_ID, model.id)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(intent)
             } else {

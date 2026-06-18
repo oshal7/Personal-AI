@@ -56,6 +56,11 @@ class ModelRepository(private val context: Context) {
      */
     val downloadState: StateFlow<DownloadProgress?> = _downloadState.asStateFlow()
 
+    private val _currentDownload = MutableStateFlow<ModelInfo?>(null)
+
+    /** Which model [downloadState] currently refers to, or null when nothing is downloading. */
+    val currentDownload: StateFlow<ModelInfo?> = _currentDownload.asStateFlow()
+
     @Volatile
     private var activeDownload: Job? = null
 
@@ -66,8 +71,10 @@ class ModelRepository(private val context: Context) {
      */
     fun ensureBackgroundDownload(model: ModelInfo, scope: CoroutineScope): Job {
         activeDownload?.let { if (it.isActive) return it }
+        _currentDownload.value = model
         val job = scope.launch {
             download(model).collect { progress -> _downloadState.value = progress }
+            _currentDownload.value = null
         }
         activeDownload = job
         return job

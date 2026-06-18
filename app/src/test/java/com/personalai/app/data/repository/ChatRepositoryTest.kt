@@ -33,6 +33,10 @@ private class FakeChatMessageDao : ChatMessageDao {
     override suspend fun deleteForSession(sessionId: Long) {
         state.value = state.value.filterNot { it.sessionId == sessionId }
     }
+
+    override suspend fun deleteFromMessage(sessionId: Long, fromMessageId: Long) {
+        state.value = state.value.filterNot { it.sessionId == sessionId && it.id >= fromMessageId }
+    }
 }
 
 private class FakeChatSessionDao : ChatSessionDao {

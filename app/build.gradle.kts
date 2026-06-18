@@ -13,8 +13,8 @@ android {
         applicationId = "com.personalai.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 6
-        versionName = "0.6.0"
+        versionCode = 7
+        versionName = "0.7.0"
 
         ndk {
             abiFilters += listOf("arm64-v8a")
@@ -85,6 +85,8 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
+
+    implementation(libs.androidx.datastore.preferences)
 
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.okhttp)

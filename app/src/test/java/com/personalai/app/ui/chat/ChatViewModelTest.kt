@@ -8,6 +8,7 @@ import com.personalai.app.data.db.ChatSessionEntity
 import com.personalai.app.data.db.MessageRole
 import com.personalai.app.data.db.TaskDao
 import com.personalai.app.data.db.TaskEntity
+import com.personalai.app.data.prefs.UserPreferences
 import com.personalai.app.data.repository.ChatRepository
 import com.personalai.app.data.repository.ModelRepository
 import com.personalai.app.data.repository.TaskRepository
@@ -50,6 +51,10 @@ private class FakeChatMessageDao : ChatMessageDao {
 
     override suspend fun deleteForSession(sessionId: Long) {
         state.value = state.value.filterNot { it.sessionId == sessionId }
+    }
+
+    override suspend fun deleteFromMessage(sessionId: Long, fromMessageId: Long) {
+        state.value = state.value.filterNot { it.sessionId == sessionId && it.id >= fromMessageId }
     }
 }
 
@@ -127,6 +132,8 @@ private class FakeLlamaSession : LlamaSession {
     override fun sendUserPrompt(message: String, maxTokens: Int): Flow<String> =
         kotlinx.coroutines.flow.flow { emit("ok") }
 
+    override fun stopGeneration() {}
+
     override fun cleanUp() {}
 
     override fun destroy() {}
@@ -160,6 +167,13 @@ class ChatViewModelTest {
         every { it.state } returns MutableStateFlow<TtsManager.State>(TtsManager.State.Idle).asStateFlow()
     }
 
+    private fun fakeUserPreferences(): UserPreferences {
+        val context: Context = mockk(relaxed = true)
+        every { context.applicationContext } returns context
+        every { context.filesDir } returns java.io.File(System.getProperty("java.io.tmpdir"), "chatvm-test-prefs-${System.nanoTime()}").apply { mkdirs() }
+        return UserPreferences(context)
+    }
+
     private fun viewModel(
         chatRepository: ChatRepository = fakeChatRepository(),
         llamaSession: LlamaSession = FakeLlamaSession(),
@@ -172,6 +186,7 @@ class ChatViewModelTest {
         taskRepository,
         fakeSpeechInputManager(),
         fakeTtsManager(),
+        fakeUserPreferences(),
         initialSessionId,
     )
 
