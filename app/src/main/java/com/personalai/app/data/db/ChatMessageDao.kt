@@ -15,4 +15,8 @@ interface ChatMessageDao {
 
     @Query("DELETE FROM chat_messages WHERE sessionId = :sessionId")
     suspend fun deleteForSession(sessionId: Long)
+
+    /** Used when editing a previously sent message: drops it and everything after it so the edit can be resent. */
+    @Query("DELETE FROM chat_messages WHERE sessionId = :sessionId AND id >= :fromMessageId")
+    suspend fun deleteFromMessage(sessionId: Long, fromMessageId: Long)
 }

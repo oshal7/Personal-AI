@@ -21,6 +21,12 @@ interface LlamaSession {
     /** Sends a user message and streams the assistant's reply token by token. */
     fun sendUserPrompt(message: String, maxTokens: Int = DEFAULT_MAX_TOKENS): Flow<String>
 
+    /**
+     * Cancels an in-flight [sendUserPrompt] generation after the current token finishes.
+     * The model stays loaded and ready for the next prompt. No-op if nothing is generating.
+     */
+    fun stopGeneration()
+
     /** Unloads the current model and frees native resources, or clears an [State.Error]. */
     fun cleanUp()
 

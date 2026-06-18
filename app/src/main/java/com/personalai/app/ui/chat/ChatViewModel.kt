@@ -106,6 +106,16 @@ class ChatViewModel(
         }
     }
 
+    fun stopGeneration() = llamaSession.stopGeneration()
+
+    /** Loads [message]'s text back into the input box and drops it (and everything after it) so the edit can be resent. */
+    fun startEditingMessage(message: ChatMessageEntity) {
+        viewModelScope.launch {
+            chatRepository.deleteFromMessage(message)
+            _inputText.value = message.content
+        }
+    }
+
     private suspend fun ensureSessionId(): Long {
         if (_sessionId.value == 0L) {
             _sessionId.value = chatRepository.createSession()

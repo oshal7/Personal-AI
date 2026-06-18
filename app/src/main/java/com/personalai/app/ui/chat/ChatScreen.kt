@@ -1,6 +1,7 @@
 package com.personalai.app.ui.chat
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -40,9 +41,12 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Alarm
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Checklist
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Summarize
 import androidx.compose.material.icons.filled.Translate
@@ -63,10 +67,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.personalai.app.R
@@ -152,7 +161,11 @@ fun ChatScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     items(messages, key = { it.id }) { message ->
-                        MessageBubble(message, modifier = Modifier.animateItem())
+                        MessageBubble(
+                            message,
+                            modifier = Modifier.animateItem(),
+                            onEdit = { viewModel.startEditingMessage(message) },
+                        )
                     }
                     if (streamingReply.isNotEmpty()) {
                         item(key = "streaming") {
@@ -212,32 +225,44 @@ fun ChatScreen(
                     shape = MaterialTheme.shapes.large,
                 )
 
-                AnimatedContent(targetState = inputText.isNotBlank(), label = "sendOrMic") { hasText ->
-                    if (hasText) {
-                        IconButton(
-                            onClick = viewModel::sendMessage,
-                            enabled = sessionState is LlamaSession.State.ModelReady,
-                        ) {
-                            Icon(Icons.Filled.Send, contentDescription = stringResource(R.string.chat_send))
-                        }
-                    } else {
-                        val isListening = voiceState is SpeechInputManager.State.Listening
-                        IconButton(
-                            onClick = {
-                                if (isListening) {
-                                    viewModel.stopVoiceInput()
-                                } else {
-                                    val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
-                                        PackageManager.PERMISSION_GRANTED
-                                    if (granted) viewModel.startVoiceInput() else micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                                }
-                            },
-                        ) {
-                            Icon(
-                                imageVector = if (isListening) Icons.Filled.Stop else Icons.Filled.Mic,
-                                contentDescription = stringResource(if (isListening) R.string.voice_stop else R.string.voice_input),
-                                tint = if (isListening) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                val isGenerating = sessionState is LlamaSession.State.Generating ||
+                    sessionState is LlamaSession.State.ProcessingUserPrompt
+                if (isGenerating) {
+                    IconButton(onClick = viewModel::stopGeneration) {
+                        Icon(
+                            Icons.Filled.Stop,
+                            contentDescription = stringResource(R.string.chat_stop_generating),
+                            tint = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                } else {
+                    AnimatedContent(targetState = inputText.isNotBlank(), label = "sendOrMic") { hasText ->
+                        if (hasText) {
+                            IconButton(
+                                onClick = viewModel::sendMessage,
+                                enabled = sessionState is LlamaSession.State.ModelReady,
+                            ) {
+                                Icon(Icons.Filled.Send, contentDescription = stringResource(R.string.chat_send))
+                            }
+                        } else {
+                            val isListening = voiceState is SpeechInputManager.State.Listening
+                            IconButton(
+                                onClick = {
+                                    if (isListening) {
+                                        viewModel.stopVoiceInput()
+                                    } else {
+                                        val granted = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) ==
+                                            PackageManager.PERMISSION_GRANTED
+                                        if (granted) viewModel.startVoiceInput() else micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                                    }
+                                },
+                            ) {
+                                Icon(
+                                    imageVector = if (isListening) Icons.Filled.Stop else Icons.Filled.Mic,
+                                    contentDescription = stringResource(if (isListening) R.string.voice_stop else R.string.voice_input),
+                                    tint = if (isListening) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
                     }
                 }
@@ -349,21 +374,51 @@ private fun TypingDot(delayMillis: Int) {
 }
 
 @Composable
-private fun MessageBubble(message: ChatMessageEntity, modifier: Modifier = Modifier) {
+private fun MessageBubble(message: ChatMessageEntity, modifier: Modifier = Modifier, onEdit: () -> Unit = {}) {
     val isUser = message.role == MessageRole.USER
-    Row(
+    var expanded by remember { mutableStateOf(false) }
+    val clipboardManager = LocalClipboardManager.current
+    val context = LocalContext.current
+
+    Column(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start,
+        horizontalAlignment = if (isUser) Alignment.End else Alignment.Start,
     ) {
         Surface(
             color = if (isUser) MaterialTheme.colorScheme.userBubble else MaterialTheme.colorScheme.surfaceVariant,
             shape = MaterialTheme.shapes.large,
+            modifier = Modifier.clickable { expanded = !expanded },
         ) {
             Box(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
-                Text(
+                MarkdownText(
                     text = message.content,
                     color = if (isUser) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+            }
+        }
+
+        AnimatedVisibility(visible = expanded) {
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.padding(top = 2.dp)) {
+                IconButton(onClick = { clipboardManager.setText(AnnotatedString(message.content)) }, modifier = Modifier.size(32.dp)) {
+                    Icon(Icons.Filled.ContentCopy, contentDescription = stringResource(R.string.message_copy), modifier = Modifier.size(16.dp))
+                }
+                IconButton(
+                    onClick = {
+                        val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                            type = "text/plain"
+                            putExtra(Intent.EXTRA_TEXT, message.content)
+                        }
+                        context.startActivity(Intent.createChooser(sendIntent, null))
+                    },
+                    modifier = Modifier.size(32.dp),
+                ) {
+                    Icon(Icons.Filled.Share, contentDescription = stringResource(R.string.message_share), modifier = Modifier.size(16.dp))
+                }
+                if (isUser) {
+                    IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
+                        Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.message_edit), modifier = Modifier.size(16.dp))
+                    }
+                }
             }
         }
     }

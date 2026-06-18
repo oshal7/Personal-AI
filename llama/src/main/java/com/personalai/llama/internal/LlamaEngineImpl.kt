@@ -108,6 +108,7 @@ internal class LlamaEngineImpl private constructor() : LlamaSession {
         require(message.isNotBlank()) { "Cannot send an empty message" }
         check(_state.value is State.ModelReady) { "Cannot send a message in state ${_state.value}" }
 
+        cancelGeneration = false
         try {
             _state.value = State.ProcessingUserPrompt
             if (processUserPrompt(message, maxTokens) != 0) {
@@ -131,6 +132,10 @@ internal class LlamaEngineImpl private constructor() : LlamaSession {
             throw e
         }
     }.flowOn(llamaDispatcher)
+
+    override fun stopGeneration() {
+        cancelGeneration = true
+    }
 
     override fun cleanUp() {
         cancelGeneration = true

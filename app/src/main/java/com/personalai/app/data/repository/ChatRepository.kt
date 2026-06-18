@@ -52,6 +52,11 @@ class ChatRepository(
         chatSessionDao.touch(sessionId, title, truncate(content, PREVIEW_MAX_LENGTH), System.currentTimeMillis())
     }
 
+    /** Drops [message] and every message after it in its session, so an edited message can be resent. */
+    suspend fun deleteFromMessage(message: ChatMessageEntity) {
+        chatMessageDao.deleteFromMessage(message.sessionId, message.id)
+    }
+
     suspend fun deleteSession(sessionId: Long) {
         chatMessageDao.deleteForSession(sessionId)
         chatSessionDao.deleteById(sessionId)
