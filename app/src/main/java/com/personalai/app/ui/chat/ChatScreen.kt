@@ -114,7 +114,7 @@ fun ChatScreen(
 
     LaunchedEffect(messages.size, streamingReply) {
         if (messages.isNotEmpty() || streamingReply.isNotEmpty()) {
-            listState.animateScrollToItem(messages.size)
+            listState.scrollToItem(messages.size)
         }
     }
 
