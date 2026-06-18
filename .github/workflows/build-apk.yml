@@ -38,7 +38,6 @@ jobs:
         run: |
           sed -i \
             -e 's/constexpr int   N_THREADS_MAX           = 4;/constexpr int   N_THREADS_MAX           = 6;/' \
-            -e 's/constexpr int   N_THREADS_HEADROOM      = 2;/constexpr int   N_THREADS_HEADROOM      = 1;/' \
             llama/src/main/cpp/third_party/llama.cpp/examples/llama.android/lib/src/main/cpp/ai_chat.cpp
 
       - name: Run unit tests
