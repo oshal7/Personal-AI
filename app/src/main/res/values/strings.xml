@@ -55,4 +55,6 @@
     <string name="message_share">Share</string>
     <string name="message_edit">Edit</string>
     <string name="message_copied">Copied to clipboard</string>
+    <string name="message_speak">Read aloud</string>
+    <string name="message_stop_speaking">Stop reading aloud</string>
 </resources>

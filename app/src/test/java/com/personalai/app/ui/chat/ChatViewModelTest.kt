@@ -12,6 +12,7 @@ import com.personalai.app.data.repository.ChatRepository
 import com.personalai.app.data.repository.ModelRepository
 import com.personalai.app.data.repository.TaskRepository
 import com.personalai.app.voice.SpeechInputManager
+import com.personalai.app.voice.TtsManager
 import com.personalai.llama.LlamaSession
 import io.mockk.every
 import io.mockk.mockk
@@ -155,12 +156,24 @@ class ChatViewModelTest {
 
     private fun fakeSpeechInputManager() = SpeechInputManager(mockk(relaxed = true))
 
+    private fun fakeTtsManager() = mockk<TtsManager>(relaxed = true).also {
+        every { it.state } returns MutableStateFlow<TtsManager.State>(TtsManager.State.Idle).asStateFlow()
+    }
+
     private fun viewModel(
         chatRepository: ChatRepository = fakeChatRepository(),
         llamaSession: LlamaSession = FakeLlamaSession(),
         taskRepository: TaskRepository = fakeTaskRepository(),
         initialSessionId: Long = 0L,
-    ) = ChatViewModel(chatRepository, fakeModelRepository(), llamaSession, taskRepository, fakeSpeechInputManager(), initialSessionId)
+    ) = ChatViewModel(
+        chatRepository,
+        fakeModelRepository(),
+        llamaSession,
+        taskRepository,
+        fakeSpeechInputManager(),
+        fakeTtsManager(),
+        initialSessionId,
+    )
 
     @Test
     fun `model load is not skipped when native backend is still initializing at ViewModel creation`() = runTest {

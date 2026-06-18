@@ -6,6 +6,7 @@ import com.personalai.app.data.repository.ChatRepository
 import com.personalai.app.data.repository.ModelRepository
 import com.personalai.app.data.repository.TaskRepository
 import com.personalai.app.voice.SpeechInputManager
+import com.personalai.app.voice.TtsManager
 import com.personalai.llama.LlamaBridge
 
 class PersonalAiApplication : Application() {
@@ -16,4 +17,5 @@ class PersonalAiApplication : Application() {
     val modelRepository by lazy { ModelRepository(applicationContext) }
     val llamaSession by lazy { LlamaBridge.getSession(applicationContext) }
     val speechInputManager by lazy { SpeechInputManager(applicationContext) }
+    val ttsManager by lazy { TtsManager(applicationContext) }
 }

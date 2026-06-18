@@ -105,6 +105,7 @@ private fun ChatSessionRoute(app: PersonalAiApplication, navController: NavHostC
                     llamaSession = app.llamaSession,
                     taskRepository = app.taskRepository,
                     speechInputManager = app.speechInputManager,
+                    ttsManager = app.ttsManager,
                     initialSessionId = sessionId,
                 )
             }

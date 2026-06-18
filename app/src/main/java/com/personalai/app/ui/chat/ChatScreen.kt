@@ -50,6 +50,8 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Summarize
 import androidx.compose.material.icons.filled.Translate
+import androidx.compose.material.icons.filled.VolumeOff
+import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -83,6 +85,7 @@ import com.personalai.app.data.db.ChatMessageEntity
 import com.personalai.app.data.db.MessageRole
 import com.personalai.app.ui.theme.userBubble
 import com.personalai.app.voice.SpeechInputManager
+import com.personalai.app.voice.TtsManager
 import com.personalai.llama.LlamaSession
 import com.personalai.llama.isBusy
 
@@ -114,7 +117,15 @@ fun ChatScreen(
     val sessionState by viewModel.sessionState.collectAsState()
     val taskSuggestion by viewModel.taskSuggestion.collectAsState()
     val voiceState by viewModel.voiceState.collectAsState()
+    val ttsState by viewModel.ttsState.collectAsState()
     val listState = rememberLazyListState()
+    var speakingMessageId by remember { mutableStateOf<Long?>(null) }
+
+    LaunchedEffect(ttsState) {
+        if (ttsState !is TtsManager.State.Speaking) {
+            speakingMessageId = null
+        }
+    }
 
     val context = LocalContext.current
     val micPermissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -165,6 +176,16 @@ fun ChatScreen(
                             message,
                             modifier = Modifier.animateItem(),
                             onEdit = { viewModel.startEditingMessage(message) },
+                            isSpeaking = speakingMessageId == message.id,
+                            onToggleSpeak = {
+                                if (speakingMessageId == message.id) {
+                                    viewModel.stopSpeaking()
+                                    speakingMessageId = null
+                                } else {
+                                    speakingMessageId = message.id
+                                    viewModel.speakMessage(message.content)
+                                }
+                            },
                         )
                     }
                     if (streamingReply.isNotEmpty()) {
@@ -374,7 +395,13 @@ private fun TypingDot(delayMillis: Int) {
 }
 
 @Composable
-private fun MessageBubble(message: ChatMessageEntity, modifier: Modifier = Modifier, onEdit: () -> Unit = {}) {
+private fun MessageBubble(
+    message: ChatMessageEntity,
+    modifier: Modifier = Modifier,
+    onEdit: () -> Unit = {},
+    isSpeaking: Boolean = false,
+    onToggleSpeak: () -> Unit = {},
+) {
     val isUser = message.role == MessageRole.USER
     var expanded by remember { mutableStateOf(false) }
     val clipboardManager = LocalClipboardManager.current
@@ -417,6 +444,14 @@ private fun MessageBubble(message: ChatMessageEntity, modifier: Modifier = Modif
                 if (isUser) {
                     IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
                         Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.message_edit), modifier = Modifier.size(16.dp))
+                    }
+                } else {
+                    IconButton(onClick = onToggleSpeak, modifier = Modifier.size(32.dp)) {
+                        Icon(
+                            imageVector = if (isSpeaking) Icons.Filled.VolumeOff else Icons.Filled.VolumeUp,
+                            contentDescription = stringResource(if (isSpeaking) R.string.message_stop_speaking else R.string.message_speak),
+                            modifier = Modifier.size(16.dp),
+                        )
                     }
                 }
             }

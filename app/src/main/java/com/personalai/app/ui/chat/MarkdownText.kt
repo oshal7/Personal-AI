@@ -29,8 +29,8 @@ private sealed class MarkdownBlock {
 
 /**
  * Minimal markdown renderer for chat bubbles: fenced code blocks, bullet/numbered lists, and
- * inline **bold**/*italic*/`code`. Deliberately not a general-purpose markdown library — just
- * enough to keep the assistant's lists and code snippets readable instead of one unbroken line.
+ * inline bold, italic, and inline code. Deliberately not a general-purpose markdown library —
+ * just enough to keep the assistant's lists and code snippets readable instead of one unbroken line.
  */
 @Composable
 fun MarkdownText(text: String, modifier: Modifier = Modifier, color: Color = LocalContentColor.current) {

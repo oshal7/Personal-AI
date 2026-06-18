@@ -10,6 +10,7 @@ import com.personalai.app.data.repository.TaskRepository
 import com.personalai.app.domain.model.ModelRegistry
 import com.personalai.app.domain.tools.TaskSuggestionDetector
 import com.personalai.app.voice.SpeechInputManager
+import com.personalai.app.voice.TtsManager
 import com.personalai.llama.LlamaSession
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -30,6 +31,7 @@ class ChatViewModel(
     private val llamaSession: LlamaSession,
     private val taskRepository: TaskRepository,
     private val speechInputManager: SpeechInputManager,
+    private val ttsManager: TtsManager,
     initialSessionId: Long = 0L,
 ) : ViewModel() {
 
@@ -52,6 +54,7 @@ class ChatViewModel(
     val taskSuggestion: StateFlow<String?> = _taskSuggestion.asStateFlow()
 
     val voiceState: StateFlow<SpeechInputManager.State> = speechInputManager.state
+    val ttsState: StateFlow<TtsManager.State> = ttsManager.state
 
     init {
         viewModelScope.launch {
@@ -107,6 +110,10 @@ class ChatViewModel(
     }
 
     fun stopGeneration() = llamaSession.stopGeneration()
+
+    fun speakMessage(text: String) = ttsManager.speak(text)
+
+    fun stopSpeaking() = ttsManager.stop()
 
     /** Loads [message]'s text back into the input box and drops it (and everything after it) so the edit can be resent. */
     fun startEditingMessage(message: ChatMessageEntity) {
