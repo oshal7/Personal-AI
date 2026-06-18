@@ -158,11 +158,10 @@ fun ChatScreen(
                         item(key = "streaming") {
                             MessageBubble(
                                 ChatMessageEntity(sessionId = 0, role = MessageRole.ASSISTANT, content = streamingReply, timestampMillis = 0),
-                                modifier = Modifier.animateItem(),
                             )
                         }
                     } else if (sessionState is LlamaSession.State.ProcessingUserPrompt) {
-                        item(key = "typing") { TypingIndicator(modifier = Modifier.animateItem()) }
+                        item(key = "typing") { TypingIndicator() }
                     }
                 }
             }
