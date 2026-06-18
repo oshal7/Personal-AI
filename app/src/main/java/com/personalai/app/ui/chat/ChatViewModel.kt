@@ -7,6 +7,7 @@ import com.personalai.app.data.db.MessageRole
 import com.personalai.app.data.prefs.UserPreferences
 import com.personalai.app.data.repository.ChatRepository
 import com.personalai.app.data.repository.ModelRepository
+import com.personalai.app.data.repository.SpaceRepository
 import com.personalai.app.data.repository.TaskRepository
 import com.personalai.app.domain.model.SYSTEM_PROMPT
 import com.personalai.app.domain.tools.TaskSuggestionDetector
@@ -31,11 +32,19 @@ class ChatViewModel(
     private val speechInputManager: SpeechInputManager,
     private val ttsManager: TtsManager,
     private val userPreferences: UserPreferences,
+    private val spaceRepository: SpaceRepository,
     initialSessionId: Long = 0L,
+    initialSpaceId: Long? = null,
 ) : ViewModel() {
 
     private val _sessionId = MutableStateFlow(initialSessionId)
     val sessionId: StateFlow<Long> = _sessionId.asStateFlow()
+
+    /** The space this chat belongs to, if any. Resolved once at init: from the existing session row when resuming, or from [initialSpaceId] for a brand-new chat. */
+    private var spaceId: Long? = initialSpaceId
+
+    private val _activeSpaceName = MutableStateFlow<String?>(null)
+    val activeSpaceName: StateFlow<String?> = _activeSpaceName.asStateFlow()
 
     val messages: StateFlow<List<ChatMessageEntity>> = _sessionId
         .flatMapLatest { id -> chatRepository.observeMessages(id) }
@@ -57,17 +66,34 @@ class ChatViewModel(
 
     init {
         viewModelScope.launch {
+            if (initialSessionId != 0L) {
+                spaceId = chatRepository.getSession(initialSessionId)?.spaceId
+            }
+            val space = spaceId?.let { spaceRepository.getSpace(it) }
+            _activeSpaceName.value = space?.name
+            val systemPrompt = if (space != null && space.skillContent.isNotBlank()) {
+                "$SYSTEM_PROMPT\n\nAdditional context for this conversation:\n${space.skillContent}"
+            } else {
+                SYSTEM_PROMPT
+            }
+
             // The native backend finishes initializing asynchronously, so wait for it to
             // leave Uninitialized/Initializing instead of checking the state once at a
             // potentially-too-early instant (which left ModelReady unreachable).
             val readyToLoad = llamaSession.state.first {
                 it !is LlamaSession.State.Uninitialized && it !is LlamaSession.State.Initializing
             }
-            if (readyToLoad is LlamaSession.State.Initialized) {
-                val activeModel = userPreferences.activeModel.first()
-                val modelFile = modelRepository.localFile(activeModel)
-                llamaSession.loadModel(modelFile.absolutePath)
-                llamaSession.setSystemPrompt(SYSTEM_PROMPT)
+            when (readyToLoad) {
+                is LlamaSession.State.Initialized -> {
+                    val activeModel = userPreferences.activeModel.first()
+                    val modelFile = modelRepository.localFile(activeModel)
+                    llamaSession.loadModel(modelFile.absolutePath)
+                    llamaSession.setSystemPrompt(systemPrompt)
+                }
+                // The model is already loaded from a previous chat — re-apply this chat's own
+                // system prompt so switching between spaces actually changes their context.
+                is LlamaSession.State.ModelReady -> llamaSession.setSystemPrompt(systemPrompt)
+                else -> Unit
             }
         }
 
@@ -125,7 +151,7 @@ class ChatViewModel(
 
     private suspend fun ensureSessionId(): Long {
         if (_sessionId.value == 0L) {
-            _sessionId.value = chatRepository.createSession()
+            _sessionId.value = chatRepository.createSession(spaceId)
         }
         return _sessionId.value
     }

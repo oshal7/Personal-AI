@@ -35,6 +35,8 @@ import com.personalai.app.ui.modeldownload.ModelDownloadScreen
 import com.personalai.app.ui.modeldownload.ModelDownloadViewModel
 import com.personalai.app.ui.settings.SettingsScreen
 import com.personalai.app.ui.settings.SettingsViewModel
+import com.personalai.app.ui.spaces.SpacesScreen
+import com.personalai.app.ui.spaces.SpacesViewModel
 import com.personalai.app.ui.tasks.TasksScreen
 import com.personalai.app.ui.tasks.TasksViewModel
 import com.personalai.app.ui.theme.PersonalAITheme
@@ -42,12 +44,15 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 private const val ROUTE_DOWNLOAD = "download"
-private const val ROUTE_CHAT_PATTERN = "chat/{sessionId}"
+private const val ROUTE_CHAT_PATTERN = "chat/{sessionId}?spaceId={spaceId}"
 private const val ROUTE_TASKS = "tasks"
 private const val ROUTE_SETTINGS = "settings"
+private const val ROUTE_SPACES = "spaces"
 private const val ARG_SESSION_ID = "sessionId"
+private const val ARG_SPACE_ID = "spaceId"
+private const val NO_SPACE = -1L
 
-private fun chatRoute(sessionId: Long) = "chat/$sessionId"
+private fun chatRoute(sessionId: Long, spaceId: Long = NO_SPACE) = "chat/$sessionId?spaceId=$spaceId"
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -93,16 +98,34 @@ private fun PersonalAiNavHost(app: PersonalAiApplication) {
         }
         composable(
             route = ROUTE_CHAT_PATTERN,
-            arguments = listOf(navArgument(ARG_SESSION_ID) { type = NavType.LongType }),
+            arguments = listOf(
+                navArgument(ARG_SESSION_ID) { type = NavType.LongType },
+                navArgument(ARG_SPACE_ID) { type = NavType.LongType; defaultValue = NO_SPACE },
+            ),
         ) { backStackEntry ->
             val sessionId = backStackEntry.arguments?.getLong(ARG_SESSION_ID) ?: 0L
-            ChatSessionRoute(app, navController, sessionId)
+            val spaceId = (backStackEntry.arguments?.getLong(ARG_SPACE_ID) ?: NO_SPACE).takeIf { it != NO_SPACE }
+            ChatSessionRoute(app, navController, sessionId, spaceId)
         }
         composable(ROUTE_TASKS) {
             val viewModel: TasksViewModel = viewModel(
                 factory = viewModelFactory { initializer { TasksViewModel(app.taskRepository, app.alarmScheduler) } }
             )
             TasksScreen(viewModel, onBack = { navController.popBackStack() })
+        }
+        composable(ROUTE_SPACES) {
+            val viewModel: SpacesViewModel = viewModel(
+                factory = viewModelFactory { initializer { SpacesViewModel(app.spaceRepository) } }
+            )
+            SpacesScreen(
+                viewModel = viewModel,
+                onBack = { navController.popBackStack() },
+                onOpenSpace = { spaceId ->
+                    navController.navigate(chatRoute(0L, spaceId)) {
+                        popUpTo(ROUTE_CHAT_PATTERN) { inclusive = true }
+                    }
+                },
+            )
         }
         composable(ROUTE_SETTINGS) {
             val viewModel: SettingsViewModel = viewModel(
@@ -121,9 +144,9 @@ private fun PersonalAiNavHost(app: PersonalAiApplication) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ChatSessionRoute(app: PersonalAiApplication, navController: NavHostController, sessionId: Long) {
+private fun ChatSessionRoute(app: PersonalAiApplication, navController: NavHostController, sessionId: Long, spaceId: Long?) {
     val chatViewModel: ChatViewModel = viewModel(
-        key = "chat-$sessionId",
+        key = "chat-$sessionId-$spaceId",
         factory = viewModelFactory {
             initializer {
                 ChatViewModel(
@@ -134,7 +157,9 @@ private fun ChatSessionRoute(app: PersonalAiApplication, navController: NavHostC
                     speechInputManager = app.speechInputManager,
                     ttsManager = app.ttsManager,
                     userPreferences = app.userPreferences,
+                    spaceRepository = app.spaceRepository,
                     initialSessionId = sessionId,
+                    initialSpaceId = spaceId,
                 )
             }
         }
@@ -163,6 +188,10 @@ private fun ChatSessionRoute(app: PersonalAiApplication, navController: NavHostC
                         popUpTo(ROUTE_CHAT_PATTERN) { inclusive = true }
                         launchSingleTop = true
                     }
+                },
+                onOpenSpaces = {
+                    scope.launch { drawerState.close() }
+                    navController.navigate(ROUTE_SPACES)
                 },
                 onOpenSettings = {
                     scope.launch { drawerState.close() }

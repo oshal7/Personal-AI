@@ -5,6 +5,7 @@ import com.personalai.app.data.db.AppDatabase
 import com.personalai.app.data.prefs.UserPreferencesImpl
 import com.personalai.app.data.repository.ChatRepository
 import com.personalai.app.data.repository.ModelRepository
+import com.personalai.app.data.repository.SpaceRepository
 import com.personalai.app.data.repository.TaskRepository
 import com.personalai.app.reminder.AlarmScheduler
 import com.personalai.app.voice.SpeechInputManager
@@ -16,6 +17,7 @@ class PersonalAiApplication : Application() {
     val database by lazy { AppDatabase.create(this) }
     val chatRepository by lazy { ChatRepository(database.chatMessageDao(), database.chatSessionDao()) }
     val taskRepository by lazy { TaskRepository(database.taskDao()) }
+    val spaceRepository by lazy { SpaceRepository(database.spaceDao()) }
     val modelRepository by lazy { ModelRepository(applicationContext) }
     val llamaSession by lazy { LlamaBridge.getSession(applicationContext) }
     val speechInputManager by lazy { SpeechInputManager(applicationContext) }

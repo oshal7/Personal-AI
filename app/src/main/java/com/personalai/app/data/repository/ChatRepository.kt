@@ -21,7 +21,7 @@ class ChatRepository(
     fun observeMessages(sessionId: Long): Flow<List<ChatMessageEntity>> =
         chatMessageDao.observeForSession(sessionId)
 
-    suspend fun createSession(): Long {
+    suspend fun createSession(spaceId: Long? = null): Long {
         val now = System.currentTimeMillis()
         return chatSessionDao.insert(
             ChatSessionEntity(
@@ -29,9 +29,12 @@ class ChatRepository(
                 lastMessagePreview = "",
                 createdAtMillis = now,
                 updatedAtMillis = now,
+                spaceId = spaceId,
             )
         )
     }
+
+    suspend fun getSession(sessionId: Long): ChatSessionEntity? = chatSessionDao.getById(sessionId)
 
     suspend fun addMessage(sessionId: Long, role: MessageRole, content: String) {
         chatMessageDao.insert(

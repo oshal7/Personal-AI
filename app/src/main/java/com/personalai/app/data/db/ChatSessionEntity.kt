@@ -15,4 +15,5 @@ data class ChatSessionEntity(
     val lastMessagePreview: String,
     val createdAtMillis: Long,
     val updatedAtMillis: Long,
+    val spaceId: Long? = null,
 )

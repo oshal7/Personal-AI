@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Workspaces
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -36,6 +37,7 @@ fun HistoryDrawerContent(
     activeSessionId: Long,
     onNewChat: () -> Unit,
     onSelectSession: (Long) -> Unit,
+    onOpenSpaces: () -> Unit,
     onOpenSettings: () -> Unit,
 ) {
     val sessions by viewModel.sessions.collectAsState()
@@ -79,6 +81,14 @@ fun HistoryDrawerContent(
                     }
                 }
             }
+
+            NavigationDrawerItem(
+                label = { Text(stringResource(R.string.chat_open_spaces)) },
+                icon = { Icon(Icons.Filled.Workspaces, contentDescription = null) },
+                selected = false,
+                onClick = onOpenSpaces,
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+            )
 
             NavigationDrawerItem(
                 label = { Text(stringResource(R.string.settings_open)) },

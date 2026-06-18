@@ -6,11 +6,14 @@ import com.personalai.app.data.db.ChatMessageEntity
 import com.personalai.app.data.db.ChatSessionDao
 import com.personalai.app.data.db.ChatSessionEntity
 import com.personalai.app.data.db.MessageRole
+import com.personalai.app.data.db.SpaceDao
+import com.personalai.app.data.db.SpaceEntity
 import com.personalai.app.data.db.TaskDao
 import com.personalai.app.data.db.TaskEntity
 import com.personalai.app.data.prefs.UserPreferences
 import com.personalai.app.data.repository.ChatRepository
 import com.personalai.app.data.repository.ModelRepository
+import com.personalai.app.data.repository.SpaceRepository
 import com.personalai.app.data.repository.TaskRepository
 import com.personalai.app.domain.model.ModelInfo
 import com.personalai.app.domain.model.ModelRegistry
@@ -113,6 +116,25 @@ private class FakeTaskDao : TaskDao {
     }
 }
 
+private class FakeSpaceDao : SpaceDao {
+    private val nextId = AtomicLong(1)
+    private val state = MutableStateFlow<List<SpaceEntity>>(emptyList())
+
+    override fun observeAll(): Flow<List<SpaceEntity>> = state
+
+    override suspend fun getById(id: Long): SpaceEntity? = state.value.firstOrNull { it.id == id }
+
+    override suspend fun insert(space: SpaceEntity): Long {
+        val id = nextId.getAndIncrement()
+        state.value = state.value + space.copy(id = id)
+        return id
+    }
+
+    override suspend fun deleteById(id: Long) {
+        state.value = state.value.filterNot { it.id == id }
+    }
+}
+
 private class FakeUserPreferences : UserPreferences {
     private val state = MutableStateFlow(ModelRegistry.default)
     override val activeModel: Flow<ModelInfo> = state
@@ -183,6 +205,8 @@ class ChatViewModelTest {
 
     private fun fakeUserPreferences(): UserPreferences = FakeUserPreferences()
 
+    private fun fakeSpaceRepository() = SpaceRepository(FakeSpaceDao())
+
     private fun viewModel(
         chatRepository: ChatRepository = fakeChatRepository(),
         llamaSession: LlamaSession = FakeLlamaSession(),
@@ -196,6 +220,7 @@ class ChatViewModelTest {
         fakeSpeechInputManager(),
         fakeTtsManager(),
         fakeUserPreferences(),
+        fakeSpaceRepository(),
         initialSessionId,
     )
 

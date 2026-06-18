@@ -45,6 +45,17 @@
     <string name="history_title">History</string>
     <string name="history_empty">No conversations yet</string>
     <string name="history_delete">Delete chat</string>
+    <string name="chat_open_spaces">Spaces</string>
+
+    <string name="spaces_title">Spaces</string>
+    <string name="spaces_empty">Create a space and attach a skill file to give chats extra context</string>
+    <string name="spaces_delete">Delete space</string>
+    <string name="spaces_add_title">New space</string>
+    <string name="spaces_add_name_label">Space name</string>
+    <string name="spaces_add_attach_file">Attach skill file</string>
+    <string name="spaces_add_file_attached">File attached — its content will be used as context in this space\'s chats</string>
+    <string name="spaces_add_confirm">Create</string>
+    <string name="spaces_add_cancel">Cancel</string>
 
     <string name="tasks_title">Tasks</string>
     <string name="tasks_empty">Suggested tasks from your chats will show up here</string>
