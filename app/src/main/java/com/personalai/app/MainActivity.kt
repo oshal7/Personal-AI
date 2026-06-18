@@ -100,7 +100,7 @@ private fun PersonalAiNavHost(app: PersonalAiApplication) {
         }
         composable(ROUTE_TASKS) {
             val viewModel: TasksViewModel = viewModel(
-                factory = viewModelFactory { initializer { TasksViewModel(app.taskRepository) } }
+                factory = viewModelFactory { initializer { TasksViewModel(app.taskRepository, app.alarmScheduler) } }
             )
             TasksScreen(viewModel, onBack = { navController.popBackStack() })
         }

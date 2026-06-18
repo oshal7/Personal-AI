@@ -18,4 +18,7 @@ interface TaskDao {
 
     @Query("DELETE FROM tasks WHERE id = :id")
     suspend fun delete(id: Long)
+
+    @Query("SELECT * FROM tasks WHERE isDone = 0 AND reminderAtMillis IS NOT NULL")
+    suspend fun getPendingReminders(): List<TaskEntity>
 }

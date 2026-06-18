@@ -14,6 +14,13 @@
     <!-- Requested lazily on first mic tap, used only for on-device voice input. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
+    <!-- Reminders fire as real alarms even while the app is killed. SCHEDULE_EXACT_ALARM is a
+         special access the user grants from system Settings on API 31+; AlarmScheduler falls
+         back to inexact delivery when it isn't granted. RECEIVE_BOOT_COMPLETED re-arms pending
+         reminders after a reboot, since AlarmManager alarms don't survive one. -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
     <application
         android:name=".PersonalAiApplication"
         android:allowBackup="true"
@@ -42,6 +49,18 @@
             android:exported="false"
             android:foregroundServiceType="dataSync"
             android:stopWithTask="false" />
+
+        <receiver
+            android:name=".reminder.ReminderReceiver"
+            android:exported="false" />
+
+        <receiver
+            android:name=".reminder.ReminderBootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

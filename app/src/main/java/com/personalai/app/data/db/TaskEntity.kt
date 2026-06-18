@@ -10,4 +10,5 @@ data class TaskEntity(
     val sourceSessionId: Long,
     val isDone: Boolean = false,
     val createdAtMillis: Long,
+    val reminderAtMillis: Long? = null,
 )

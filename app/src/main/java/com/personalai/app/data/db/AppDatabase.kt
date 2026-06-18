@@ -10,7 +10,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [ChatMessageEntity::class, ChatSessionEntity::class, TaskEntity::class],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -22,7 +22,7 @@ abstract class AppDatabase : RoomDatabase() {
     companion object {
         fun create(context: Context): AppDatabase =
             Room.databaseBuilder(context, AppDatabase::class.java, "personal_ai.db")
-                .addMigrations(MIGRATION_1_2)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                 .build()
     }
 }
@@ -86,5 +86,12 @@ private val MIGRATION_1_2 = object : Migration(1, 2) {
                 arrayOf(preview, defaultSessionId),
             )
         }
+    }
+}
+
+/** Adds an optional reminder time to tasks so they can back a real OS alarm. */
+private val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE tasks ADD COLUMN reminderAtMillis INTEGER")
     }
 }

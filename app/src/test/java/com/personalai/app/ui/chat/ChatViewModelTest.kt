@@ -105,6 +105,9 @@ private class FakeTaskDao : TaskDao {
         state.value = state.value.map { if (it.id == id) it.copy(isDone = isDone) else it }
     }
 
+    override suspend fun getPendingReminders(): List<TaskEntity> =
+        state.value.filter { !it.isDone && it.reminderAtMillis != null }
+
     override suspend fun delete(id: Long) {
         state.value = state.value.filterNot { it.id == id }
     }

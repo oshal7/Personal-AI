@@ -6,6 +6,7 @@ import com.personalai.app.data.prefs.UserPreferencesImpl
 import com.personalai.app.data.repository.ChatRepository
 import com.personalai.app.data.repository.ModelRepository
 import com.personalai.app.data.repository.TaskRepository
+import com.personalai.app.reminder.AlarmScheduler
 import com.personalai.app.voice.SpeechInputManager
 import com.personalai.app.voice.TtsManager
 import com.personalai.llama.LlamaBridge
@@ -20,4 +21,5 @@ class PersonalAiApplication : Application() {
     val speechInputManager by lazy { SpeechInputManager(applicationContext) }
     val ttsManager by lazy { TtsManager(applicationContext) }
     val userPreferences by lazy { UserPreferencesImpl(applicationContext) }
+    val alarmScheduler by lazy { AlarmScheduler(applicationContext) }
 }

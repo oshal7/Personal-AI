@@ -49,6 +49,16 @@
     <string name="tasks_title">Tasks</string>
     <string name="tasks_empty">Suggested tasks from your chats will show up here</string>
     <string name="tasks_delete">Delete task</string>
+    <string name="tasks_add_title">New task</string>
+    <string name="tasks_add_label">What do you need to do?</string>
+    <string name="tasks_add_set_reminder">Remind me</string>
+    <string name="tasks_add_confirm">Add</string>
+    <string name="tasks_add_cancel">Cancel</string>
+    <string name="tasks_exact_alarm_banner">Allow exact alarms so reminders fire on time</string>
+    <string name="tasks_exact_alarm_action">Open settings</string>
+
+    <string name="reminder_notification_channel">Reminders</string>
+    <string name="reminder_notification_title">Reminder</string>
 
     <string name="chat_stop_generating">Stop generating</string>
     <string name="message_copy">Copy</string>
