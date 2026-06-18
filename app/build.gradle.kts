@@ -25,6 +25,20 @@ android {
         }
     }
 
+    signingConfigs {
+        getByName("debug") {
+            // Committed so every build (CI or local) signs debug APKs with the same
+            // certificate. Without this, AGP auto-generates a fresh debug keystore on
+            // any machine where ~/.android/debug.keystore doesn't already exist (e.g.
+            // every fresh GitHub Actions runner) — different certs across builds make
+            // Android refuse to install one over the other ("App not installed").
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
