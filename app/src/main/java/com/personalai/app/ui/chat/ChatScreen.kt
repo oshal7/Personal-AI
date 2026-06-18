@@ -118,6 +118,7 @@ fun ChatScreen(
     val taskSuggestion by viewModel.taskSuggestion.collectAsState()
     val voiceState by viewModel.voiceState.collectAsState()
     val ttsState by viewModel.ttsState.collectAsState()
+    val activeSpaceName by viewModel.activeSpaceName.collectAsState()
     val listState = rememberLazyListState()
     var speakingMessageId by remember { mutableStateOf<Long?>(null) }
 
@@ -141,7 +142,14 @@ fun ChatScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.app_name)) },
+                title = {
+                    Column {
+                        Text(stringResource(R.string.app_name))
+                        activeSpaceName?.let {
+                            Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onOpenDrawer) {
                         Icon(Icons.Filled.Menu, contentDescription = stringResource(R.string.chat_open_history))
