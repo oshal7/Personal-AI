@@ -34,6 +34,13 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      - name: Raise inference thread cap
+        run: |
+          sed -i \
+            -e 's/constexpr int   N_THREADS_MAX           = 4;/constexpr int   N_THREADS_MAX           = 6;/' \
+            -e 's/constexpr int   N_THREADS_HEADROOM      = 2;/constexpr int   N_THREADS_HEADROOM      = 1;/' \
+            llama/src/main/cpp/third_party/llama.cpp/examples/llama.android/lib/src/main/cpp/ai_chat.cpp
+
       - name: Run unit tests
         run: |
           export ANDROID_NDK_HOME="$ANDROID_SDK_ROOT/ndk/29.0.13113456"
